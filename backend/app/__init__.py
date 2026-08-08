@@ -1,6 +1,6 @@
 import os
 from datetime import timedelta
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from app.extensions import db, jwt
 
@@ -8,34 +8,38 @@ from app.extensions import db, jwt
 def create_app():
     app = Flask(__name__)
 
-    # ── Config (reads from environment variables on Render) ──────────────────
-    base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    # ── Paths ─────────────────────────────────────────────────────────────────
+    # backend/ lives inside the repo root
+    # repo_root/
+    #   backend/   ← we are here
+    #   frontend/
+    #     build/   ← React output
+    backend_dir    = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    repo_root      = os.path.abspath(os.path.join(backend_dir, '..'))
+    frontend_build = os.path.join(repo_root, 'frontend', 'build')
 
+    # ── Config ────────────────────────────────────────────────────────────────
     app.config['SQLALCHEMY_DATABASE_URI']        = os.environ.get(
         'DATABASE_URL',
-        f"sqlite:///{os.path.join(base_dir, 'instance', 'prms.db')}"
+        f"sqlite:///{os.path.join(backend_dir, 'instance', 'prms.db')}"
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY']                     = os.environ.get('SECRET_KEY', 'prms-secret-2024')
+    app.config['SECRET_KEY']                     = os.environ.get('SECRET_KEY',     'prms-secret-2024')
     app.config['JWT_SECRET_KEY']                 = os.environ.get('JWT_SECRET_KEY', 'prms-jwt-secret-2024')
     app.config['JWT_ACCESS_TOKEN_EXPIRES']       = timedelta(hours=12)
-    app.config['UPLOAD_FOLDER']                  = os.path.join(base_dir, 'uploads')
+    app.config['UPLOAD_FOLDER']                  = os.path.join(backend_dir, 'uploads')
     app.config['MAX_CONTENT_LENGTH']             = 16 * 1024 * 1024   # 16 MB
+    app.config['FRONTEND_BUILD']                 = frontend_build
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(os.path.join(base_dir, 'instance'), exist_ok=True)
+    os.makedirs(os.path.join(backend_dir, 'instance'), exist_ok=True)
 
-    # ── Extensions ──────────────────────────────────────────────────────────
+    # ── Extensions ────────────────────────────────────────────────────────────
     db.init_app(app)
     jwt.init_app(app)
+    CORS(app, resources={r'/api/*': {'origins': '*'}}, supports_credentials=True)
 
-    # Allow both localhost (dev) and the deployed frontend URL (prod)
-    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-    CORS(app,
-         resources={r'/api/*': {'origins': [frontend_url, 'http://localhost:3000']}},
-         supports_credentials=True)
-
-    # ── Blueprints ──────────────────────────────────────────────────────────
+    # ── API Blueprints ─────────────────────────────────────────────────────────
     from app.routes.auth          import auth_bp
     from app.routes.students      import students_bp
     from app.routes.reviews       import reviews_bp
@@ -48,7 +52,19 @@ def create_app():
     app.register_blueprint(marks_bp,    url_prefix='/api/marks')
     app.register_blueprint(ann_bp,      url_prefix='/api/announcements')
 
-    # ── Create tables ────────────────────────────────────────────────────────
+    # ── Serve React (production) ───────────────────────────────────────────────
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_react(path):
+        build = app.config['FRONTEND_BUILD']
+        full  = os.path.join(build, path)
+        # Serve real static files (JS, CSS, images, fonts)
+        if path and os.path.isfile(full):
+            return send_from_directory(build, path)
+        # All other routes → index.html (React Router handles them)
+        return send_from_directory(build, 'index.html')
+
+    # ── Create tables ──────────────────────────────────────────────────────────
     with app.app_context():
         db.create_all()
 

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: proreview          # ← single service name, one URL
+    runtime: python
+    buildCommand: bash build.sh
+    startCommand: cd backend && gunicorn run:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true

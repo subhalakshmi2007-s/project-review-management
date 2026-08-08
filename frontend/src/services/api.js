@@ -1,8 +1,10 @@
 import axios from 'axios';
 
-// In development: uses http://localhost:5000/api
-// In production:  uses REACT_APP_API_URL from .env or Render environment
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// In development: full URL to Flask on port 5000
+// In production:  same origin — Flask serves both the API and the React app
+const BASE_URL = process.env.NODE_ENV === 'production'
+  ? '/api'
+  : 'http://localhost:5000/api';
 
 const api = axios.create({ baseURL: BASE_URL });
 
