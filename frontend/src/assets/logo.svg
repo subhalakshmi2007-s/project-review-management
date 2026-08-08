@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- Navy-to-green gradient for the P letter -->
+    <linearGradient id="pGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   style="stop-color:#1a3a6b"/>
+      <stop offset="100%" style="stop-color:#2d8a2d"/>
+    </linearGradient>
+    <!-- Clip circle for the ring gap effect -->
+  </defs>
+
+  <!-- ── Outer circle ring: navy (left ~270°) ── -->
+  <circle cx="100" cy="95" r="82"
+    fill="none" stroke="#1a3a6b" stroke-width="4.5"
+    stroke-dasharray="365 515" stroke-dashoffset="0"
+    stroke-linecap="round"/>
+
+  <!-- ── Outer circle ring: green (right ~90°) ── -->
+  <circle cx="100" cy="95" r="82"
+    fill="none" stroke="#2eaa2e" stroke-width="4.5"
+    stroke-dasharray="145 515" stroke-dashoffset="-365"
+    stroke-linecap="round"/>
+
+  <!-- ── Large "P" letter with gradient ── -->
+  <!-- P stem (vertical bar) -->
+  <rect x="28" y="18" width="18" height="105" rx="2" fill="url(#pGrad)"/>
+  <!-- P bowl top -->
+  <path d="M46 18 Q88 18 88 44 Q88 70 46 70 L46 53 Q70 53 70 44 Q70 35 46 35 Z"
+        fill="url(#pGrad)"/>
+
+  <!-- ── Document (white, folded corner) ── -->
+  <rect x="72" y="68" width="52" height="64" rx="4" fill="white" stroke="#c8d4e8" stroke-width="1.2"/>
+  <!-- Fold corner -->
+  <polygon points="108,68 124,84 108,84" fill="#dce8f8"/>
+  <polygon points="108,68 124,84 108,84" fill="none" stroke="#b0c4d8" stroke-width="0.8"/>
+
+  <!-- Green checkmark circle on document -->
+  <circle cx="86" cy="84" r="6" fill="#2eaa2e"/>
+  <polyline points="83,84 86,87 91,80"
+    stroke="white" stroke-width="1.8" fill="none"
+    stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Horizontal lines on document -->
+  <line x1="95" y1="84" x2="112" y2="84" stroke="#8fa8c8" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="95" y1="89" x2="112" y2="89" stroke="#8fa8c8" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- Stars row (4 filled navy + 1 light) -->
+  <text x="78" y="103" font-size="8" fill="#1a3a6b">★★★★</text>
+  <text x="110" y="103" font-size="8" fill="#b0c4d8">★</text>
+
+  <!-- Two more lines below stars -->
+  <line x1="78" y1="109" x2="116" y2="109" stroke="#8fa8c8" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="80" cy="117" r="1.8" fill="#8fa8c8"/>
+  <line x1="84" y1="117" x2="116" y2="117" stroke="#8fa8c8" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- ── People silhouettes (3) ── -->
+  <!-- Left person -->
+  <circle cx="46" cy="138" r="7" fill="#5a6a7a"/>
+  <path d="M34 158 Q34 148 46 148 Q58 148 58 158Z" fill="#5a6a7a"/>
+  <!-- Centre person (slightly larger, darker) -->
+  <circle cx="64" cy="134" r="8.5" fill="#3a4a5a"/>
+  <path d="M51 158 Q51 143 64 143 Q77 143 77 158Z" fill="#3a4a5a"/>
+  <!-- Right person -->
+  <circle cx="82" cy="138" r="7" fill="#5a6a7a"/>
+  <path d="M70 158 Q70 148 82 148 Q94 148 94 158Z" fill="#5a6a7a"/>
+
+  <!-- ── Magnifying glass ── -->
+  <!-- Glass circle -->
+  <circle cx="140" cy="140" r="20" fill="white" stroke="#1a3a6b" stroke-width="3.5"/>
+  <!-- Bar chart inside glass -->
+  <rect x="128" y="138" width="5"  height="10" rx="1" fill="#2eaa2e"/>
+  <rect x="135" y="132" width="5"  height="16" rx="1" fill="#1a3a6b"/>
+  <rect x="142" y="135" width="5"  height="13" rx="1" fill="#4db84d"/>
+  <!-- Handle -->
+  <line x1="154" y1="153" x2="165" y2="164"
+    stroke="#1a3a6b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- ── Shadow/ground arc under people ── -->
+  <ellipse cx="64" cy="161" rx="35" ry="4" fill="rgba(0,0,0,0.07)"/>
+</svg>
