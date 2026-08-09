@@ -53,16 +53,24 @@ def create_app():
     app.register_blueprint(ann_bp,      url_prefix='/api/announcements')
 
     # ── Serve React (production) ───────────────────────────────────────────────
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def serve_react(path):
+    @app.route('/static/<path:filename>')
+    def serve_static(filename):
         build = app.config['FRONTEND_BUILD']
-        full  = os.path.join(build, path)
-        # Serve real static files (JS, CSS, images, fonts)
-        if path and os.path.isfile(full):
-            return send_from_directory(build, path)
-        # All other routes → index.html (React Router handles them)
-        return send_from_directory(build, 'index.html')
+        return send_from_directory(
+        os.path.join(build, 'static'),
+        filename
+    )
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react(path):
+    build = app.config['FRONTEND_BUILD']
+
+    if path and os.path.isfile(os.path.join(build, path)):
+        return send_from_directory(build, path)
+
+    return send_from_directory(build, 'index.html')
 
     # ── Create tables ──────────────────────────────────────────────────────────
     with app.app_context():
