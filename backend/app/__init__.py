@@ -6,7 +6,7 @@ from app.extensions import db, jwt
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder=None)
 
     # Paths
     backend_dir = os.path.abspath(
