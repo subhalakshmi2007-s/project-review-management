@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { FiMail, FiLock, FiUser, FiKey, FiLogIn, FiUserPlus } from 'react-icons/fi';
 import { loginUser, registerTeacher, registerStudent } from '../services/auth';
 import logo from '../assets/logo.svg';
+import HistoryControls from '../components/common/HistoryControls';
 
 export default function AuthPage({ mode }) {
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ export default function AuthPage({ mode }) {
   if (joinCode) {
     return (
       <div className="auth-page">
+        <div className="auth-topbar"><HistoryControls /></div>
         <div className="auth-card">
           <div className="auth-logo"><img src={logo} alt="logo" /></div>
           <div className="auth-title"><span className="pro">PRO</span><span className="rev">REVIEW</span></div>
@@ -80,6 +82,7 @@ export default function AuthPage({ mode }) {
 
   return (
     <div className="auth-page">
+      <div className="auth-topbar"><HistoryControls /></div>
       <div className="auth-card">
         <div className="auth-logo"><img src={logo} alt="logo" /></div>
         <div className="auth-title"><span className="pro">PRO</span><span className="rev">REVIEW</span></div>

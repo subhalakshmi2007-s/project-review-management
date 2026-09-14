@@ -11,7 +11,7 @@ env/
 .venv/
 
 # Database (SQLite local file — Render uses its own)
-instance/prms.db
+instance/prams.db
 instance/*.db
 
 # Uploaded PDFs (not version controlled)

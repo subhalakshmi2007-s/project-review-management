@@ -10,7 +10,7 @@ Marks management
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import User, Review, Mark, Submission
+from app.models import User, Review, Mark, Submission, Notification
 
 marks_bp = Blueprint('marks', __name__)
 
@@ -34,20 +34,34 @@ def assign_marks(rid):
         return jsonify(error='Student has not submitted yet'), 400
 
     d = request.get_json(silent=True) or {}
+    total_marks = d.get('total_marks')
     marks_obtained = d.get('marks_obtained')
     feedback       = (d.get('feedback') or '').strip()
 
+    if total_marks is None:
+        return jsonify(error='total_marks is required'), 400
     if marks_obtained is None:
         return jsonify(error='marks_obtained is required'), 400
 
+    total_marks = float(total_marks)
     marks_obtained = float(marks_obtained)
-    if marks_obtained < 0 or marks_obtained > review.total_marks:
-        return jsonify(error=f'Marks must be between 0 and {review.total_marks}'), 400
+    if total_marks <= 0:
+        return jsonify(error='Total marks must be greater than 0'), 400
+    if marks_obtained < 0 or marks_obtained > total_marks:
+        return jsonify(error=f'Marks must be between 0 and {total_marks}'), 400
+
+    review.total_marks = total_marks
 
     existing = review.mark
     if existing:
         existing.marks_obtained = marks_obtained
         existing.feedback       = feedback
+        db.session.add(Notification(
+            recipient_id=review.student_id,
+            kind='marks_updated',
+            title='Marks updated',
+            message=f'Your marks for "{review.title}" were updated.',
+        ))
         db.session.commit()
         return jsonify(message='Marks updated', mark=existing.to_dict()), 200
 
@@ -58,6 +72,12 @@ def assign_marks(rid):
         feedback=feedback,
     )
     db.session.add(mark)
+    db.session.add(Notification(
+        recipient_id=review.student_id,
+        kind='marks_assigned',
+        title='Marks received',
+        message=f'Your teacher marked "{review.title}".',
+    ))
     db.session.commit()
     return jsonify(message='Marks assigned', mark=mark.to_dict()), 201
 

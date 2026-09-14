@@ -13,7 +13,6 @@ const _save = (token, user) => {
 export const logout = () => {
   localStorage.removeItem('prms_token');
   localStorage.removeItem('prms_user');
-  window.location.href = '/login';
 };
 
 export const loginUser = async (email, password) => {

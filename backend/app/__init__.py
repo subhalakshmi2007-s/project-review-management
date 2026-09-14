@@ -66,9 +66,10 @@ def create_app():
     db.init_app(app)
     jwt.init_app(app)
 
+    cors_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:3000')
     CORS(
         app,
-        resources={r'/api/*': {'origins': '*'}},
+        resources={r'/api/*': {'origins': cors_origins}},
         supports_credentials=True
     )
 
@@ -78,6 +79,7 @@ def create_app():
     from app.routes.reviews import reviews_bp
     from app.routes.marks import marks_bp
     from app.routes.announcements import ann_bp
+    from app.routes.notifications import notifications_bp
 
     app.register_blueprint(
         auth_bp,
@@ -102,6 +104,11 @@ def create_app():
     app.register_blueprint(
         ann_bp,
         url_prefix='/api/announcements'
+    )
+
+    app.register_blueprint(
+        notifications_bp,
+        url_prefix='/api/notifications'
     )
 
     # Serve React static files

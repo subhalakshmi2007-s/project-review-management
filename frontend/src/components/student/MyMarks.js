@@ -7,15 +7,14 @@ export default function MyMarks() {
   const [marks, setMarks] = useState([]);
 
   const load = useCallback(async () => {
-    try { const { data } = await api.get('/marks/mine'); setMarks(data); }
+    try {
+      const { data } = await api.get('/marks/mine');
+      setMarks(data);
+    }
     catch { toast.error('Failed to load marks'); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  const total   = marks.reduce((s, m) => s + m.marks_obtained, 0);
-  const maxTotal = marks.reduce((s, m) => s + m.total_marks, 0);
-  const pct     = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
 
   return (
     <>
@@ -26,15 +25,6 @@ export default function MyMarks() {
       {marks.length === 0
         ? <div className="alert alert-info">No marks assigned yet. Submit your reviews first.</div>
         : <>
-          {/* Summary bar */}
-          <div className="panel" style={{ marginBottom: '1rem', background: 'var(--light-navy)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ fontWeight: 700 }}>Overall Score</span>
-              <span style={{ fontWeight: 800, color: 'var(--navy)' }}>{total} / {maxTotal} ({pct}%)</span>
-            </div>
-            <div className="bar-bg"><div className="bar-fill" style={{ width: `${pct}%` }} /></div>
-          </div>
-
           <div className="tbl-wrap">
             <table>
               <thead>
@@ -42,7 +32,9 @@ export default function MyMarks() {
               </thead>
               <tbody>
                 {marks.map(m => {
-                  const p = Math.round((m.marks_obtained / m.total_marks) * 100);
+                  const p = Number(m.total_marks) > 0
+                    ? Math.round((Number(m.marks_obtained) / Number(m.total_marks)) * 100)
+                    : 0;
                   return (
                     <tr key={m.id}>
                       <td>

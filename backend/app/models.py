@@ -18,6 +18,7 @@ class User(db.Model):
     submissions      = db.relationship('Submission', backref='student', lazy=True)
     marks            = db.relationship('Mark', backref='student', lazy=True)
     announcements    = db.relationship('Announcement', backref='teacher', lazy=True, cascade='all, delete-orphan')
+    notifications    = db.relationship('Notification', backref='recipient', lazy=True, cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -36,7 +37,7 @@ class Review(db.Model):
     title          = db.Column(db.String(200), nullable=False)
     description    = db.Column(db.Text, nullable=False)       # task instructions from teacher
     review_number  = db.Column(db.Integer, nullable=False)    # e.g. 1, 2, 3
-    total_marks    = db.Column(db.Float, nullable=False)
+    total_marks    = db.Column(db.Float, nullable=True)
     deadline       = db.Column(db.DateTime, nullable=False)
     teacher_id     = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     student_id     = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -132,5 +133,26 @@ class Announcement(db.Model):
             'title': self.title,
             'content': self.content,
             'teacher_name': self.teacher.name if self.teacher else '',
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id           = db.Column(db.Integer, primary_key=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    kind         = db.Column(db.String(40), nullable=False)
+    title        = db.Column(db.String(200), nullable=False)
+    message      = db.Column(db.String(500), nullable=False)
+    is_read      = db.Column(db.Boolean, nullable=False, default=False)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'kind': self.kind,
+            'title': self.title,
+            'message': self.message,
+            'is_read': self.is_read,
             'created_at': self.created_at.isoformat(),
         }

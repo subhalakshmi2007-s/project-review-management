@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import { isLoggedIn, getRole } from './services/auth';
 
 import AuthPage       from './pages/AuthPage';
+import LandingPage    from './pages/LandingPage';
 import TeacherHome    from './pages/TeacherHome';
 import StudentHome    from './pages/StudentHome';
 
@@ -25,11 +26,7 @@ export default function App() {
         <Route path="/teacher" element={<Guard role="teacher"><TeacherHome /></Guard>} />
         <Route path="/student" element={<Guard role="student"><StudentHome /></Guard>} />
 
-        <Route path="/" element={
-          isLoggedIn()
-            ? <Navigate to={`/${getRole()}`} replace />
-            : <Navigate to="/login" replace />
-        }/>
+        <Route path="/" element={<LandingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

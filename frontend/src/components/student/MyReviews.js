@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FiUpload, FiDownload, FiClipboard } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
+import { openPdfFromApi } from '../../services/pdfViewer';
 
 const STATUS_BADGE = {
   marked:    <span className="badge badge-success">Marked</span>,
@@ -15,6 +16,10 @@ export default function MyReviews() {
   const [open,    setOpen]    = useState(false);
   const [active,  setActive]  = useState(null);
   const [file,    setFile]    = useState(null);
+  const [reviewNumber, setReviewNumber] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [title,   setTitle]   = useState('');
+  const [details, setDetails] = useState('');
   const [note,    setNote]    = useState('');
   const [busy,    setBusy]    = useState(false);
 
@@ -25,21 +30,66 @@ export default function MyReviews() {
 
   useEffect(() => { load(); }, [load]);
 
-  const openSubmit = (r) => { setActive(r); setFile(null); setNote(''); setOpen(true); };
-  const close = () => { setOpen(false); setActive(null); };
+  const openSubmit = (r) => {
+    setActive(r);
+    setFile(null);
+    setReviewNumber(String(r.review_number || ''));
+    setDeadline(r.deadline ? new Date(r.deadline).toISOString().slice(0, 10) : '');
+    setTitle(r.title || '');
+    setDetails(r.description || '');
+    setNote(r.task_note || '');
+    setOpen(true);
+  };
+  const openCreate = () => {
+    setActive(null);
+    setFile(null);
+    setReviewNumber('');
+    setDeadline('');
+    setTitle('');
+    setDetails('');
+    setNote('');
+    setOpen(true);
+  };
+  const close = () => {
+    setOpen(false);
+    setActive(null);
+    setFile(null);
+    setReviewNumber('');
+    setDeadline('');
+    setTitle('');
+    setDetails('');
+    setNote('');
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     if (!file) { toast.error('Please select a PDF file'); return; }
+    if (!active && (!reviewNumber || !deadline || !title.trim() || !details.trim())) {
+      toast.error('Review number, date, title and description are required');
+      return;
+    }
     setBusy(true);
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('task_note', note);
+    if (active) {
+      fd.append('title', title.trim());
+      fd.append('description', details.trim());
+      fd.append('task_note', note);
+    } else {
+      fd.append('review_number', reviewNumber);
+      fd.append('deadline', deadline);
+      fd.append('title', title.trim());
+      fd.append('description', details.trim());
+      fd.append('task_note', note);
+    }
     try {
-      await api.post(`/reviews/${active.id}/submit`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      toast.success('Submitted successfully!');
+      if (active) {
+        await api.post(`/reviews/${active.id}/submit`, fd);
+        toast.success(active.submitted ? 'Submission updated successfully!' : 'Submitted successfully!');
+      } else {
+        await api.post('/reviews', fd);
+        toast.success('Review submitted successfully!');
+      }
       close(); load();
     } catch (err) { toast.error(err.response?.data?.error || 'Submission failed'); }
     finally { setBusy(false); }
@@ -49,6 +99,7 @@ export default function MyReviews() {
     <>
       <div className="panel-head">
         <h3 className="panel-title"><FiClipboard style={{ marginRight: 6, color: 'var(--navy)' }} />My Reviews</h3>
+        <button className="btn btn-primary btn-sm" onClick={openCreate}>Add Review</button>
       </div>
 
       {reviews.length === 0
@@ -68,9 +119,9 @@ export default function MyReviews() {
             </p>
 
             <div style={{ display: 'flex', gap: '1.5rem', fontSize: '.82rem', color: '#64748b', marginBottom: 8 }}>
-              <span>🏆 Marks: {r.total_marks}</span>
-              <span>📅 Deadline: {new Date(r.deadline).toLocaleString()}</span>
-              {r.marks_obtained !== null && (
+              <span>🏆 Marks: {r.total_marks !== null && r.total_marks !== undefined && Number(r.total_marks) > 0 ? r.total_marks : '—'}</span>
+              <span>📅 Review Date: {new Date(r.deadline).toLocaleDateString()}</span>
+              {r.marks_obtained !== null && r.marks_obtained !== undefined && Number(r.marks_obtained) >= 0 && Number(r.total_marks) > 0 && (
                 <span style={{ color: 'var(--green)', fontWeight: 700 }}>
                   ✅ Scored: {r.marks_obtained} / {r.total_marks}
                 </span>
@@ -84,17 +135,19 @@ export default function MyReviews() {
             )}
 
             <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap' }}>
-              {!r.submitted && r.status !== 'overdue' && (
+              {r.status !== 'marked' && r.status !== 'overdue' && (
                 <button className="btn btn-primary btn-sm" onClick={() => openSubmit(r)}>
-                  <FiUpload /> Submit
+                  <FiUpload /> {r.submitted ? 'Update Submission' : 'Submit'}
                 </button>
               )}
               {r.submitted && (
-                <a className="btn btn-info btn-sm"
-                  href={`http://localhost:5000/api/reviews/uploads/${r.pdf_file}`}
-                  target="_blank" rel="noreferrer">
+                <button
+                  type="button"
+                  className="btn btn-info btn-sm"
+                  onClick={() => openPdfFromApi(r.pdf_file)}
+                >
                   <FiDownload /> View My PDF
-                </a>
+                </button>
               )}
             </div>
           </div>
@@ -102,20 +155,46 @@ export default function MyReviews() {
       }
 
       {/* Submit modal */}
-      {open && active && (
+      {open && (
         <div className="overlay" onClick={close}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-hd">
-              <h4>Submit — {active.title}</h4>
+              <h4>{active ? `Submit — ${active.title}` : 'Add New Review'}</h4>
               <button className="modal-close" onClick={close}>×</button>
             </div>
             <form onSubmit={submit}>
               <div className="modal-bd">
-                <div className="alert alert-info" style={{ fontSize: '.85rem' }}>
-                  <strong>Task Instructions:</strong> {active.description}
+                {active && (
+                  <div className="alert alert-info" style={{ fontSize: '.85rem' }}>
+                    <strong>Task Instructions:</strong> {active.description}
+                  </div>
+                )}
+                {!active && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Review Number</label>
+                      <input className="form-control" type="number" min="1" value={reviewNumber} onChange={e => setReviewNumber(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Review Date</label>
+                      <input className="form-control" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required />
+                    </div>
+                  </>
+                )}
+                <div className="form-group">
+                  <label className="form-label">Review Title</label>
+                  <input className="form-control" type="text"
+                    placeholder="Give this review a clear task title…"
+                    value={title} onChange={e => setTitle(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Task Note <span className="text-muted text-sm">(describe what you did)</span></label>
+                  <label className="form-label">Task Details <span className="text-muted text-sm">(what did you complete)</span></label>
+                  <textarea className="form-control" rows={4}
+                    placeholder="Describe what you completed for this review…"
+                    value={details} onChange={e => setDetails(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Task Note <span className="text-muted text-sm">(optional)</span></label>
                   <textarea className="form-control" rows={4}
                     placeholder="Briefly describe the tasks you completed for this review…"
                     value={note} onChange={e => setNote(e.target.value)} />
@@ -133,7 +212,7 @@ export default function MyReviews() {
               <div className="modal-ft">
                 <button type="button" className="btn btn-secondary" onClick={close}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={busy || !file}>
-                  <FiUpload /> {busy ? 'Uploading…' : 'Submit Review'}
+                  <FiUpload /> {busy ? 'Uploading…' : active ? 'Submit Review' : 'Create Review'}
                 </button>
               </div>
             </form>

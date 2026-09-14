@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiClipboard, FiEye, FiDownload, FiSearch, FiX } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
+import { openPdfFromApi } from '../../services/pdfViewer';
 
 const EMPTY = { title: '', description: '', review_number: '1', total_marks: '', deadline: '', student_id: '' };
 
@@ -58,6 +59,13 @@ export default function Reviews() {
 
   const isFiltering = searchText || filterStatus || filterStudent;
 
+  const formatMarks = (value) => {
+    if (value === null || value === undefined || value === '' || Number(value) <= 0 || Number.isNaN(Number(value))) {
+      return '—';
+    }
+    return value;
+  };
+
   // ── Modal helpers ─────────────────────────────────────────────────────────
   const openAdd  = () => { setEditing(null); setForm(EMPTY); setOpen(true); };
   const openEdit = (r) => {
@@ -75,8 +83,20 @@ export default function Reviews() {
   const save = async (e) => {
     e.preventDefault(); setBusy(true);
     try {
-      if (editing) { await api.put(`/reviews/${editing.id}`, form); toast.success('Review updated'); }
-      else          { await api.post('/reviews', form);              toast.success('Review created'); }
+      const payload = { ...form };
+      if (!editing && payload.student_id === 'all') {
+        payload.student_id = 'all';
+      }
+
+      const totalMarks = Number(payload.total_marks);
+      if (!payload.total_marks || Number.isNaN(totalMarks) || totalMarks <= 0) {
+        toast.error('Total marks are required and must be greater than 0');
+        setBusy(false);
+        return;
+      }
+
+      if (editing) { await api.put(`/reviews/${editing.id}`, { ...payload, total_marks: totalMarks }); toast.success('Review updated'); }
+      else          { await api.post('/reviews', { ...payload, total_marks: totalMarks });          toast.success('Review created'); }
       close(); load();
     } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
     finally { setBusy(false); }
@@ -109,13 +129,10 @@ export default function Reviews() {
             </span>
           )}
         </h3>
-        <button className="btn btn-primary" onClick={openAdd} disabled={students.length === 0}>
-          <FiPlus /> Create Review
-        </button>
       </div>
 
       {students.length === 0 && (
-        <div className="alert alert-warn">Add students first before creating reviews.</div>
+        <div className="alert alert-warn">Add students to view their submitted reviews.</div>
       )}
 
       {/* ── Filter bar ──────────────────────────────────────────────────── */}
@@ -192,7 +209,8 @@ export default function Reviews() {
               <th>Title</th>
               <th>Assigned To</th>
               <th>Marks</th>
-              <th>Deadline</th>
+              <th>Review Date</th>
+              <th>Submitted</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -218,9 +236,12 @@ export default function Reviews() {
                     {r.student_name}
                   </span>
                 </td>
-                <td>{r.total_marks}</td>
+                <td>{formatMarks(r.total_marks)}</td>
                 <td style={{ whiteSpace: 'nowrap', fontSize: '.82rem' }}>
-                  {new Date(r.deadline).toLocaleString()}
+                  {new Date(r.deadline).toLocaleDateString()}
+                </td>
+                <td style={{ whiteSpace: 'nowrap', fontSize: '.82rem' }}>
+                  {r.submitted ? new Date(r.submitted_at).toLocaleDateString() : '—'}
                 </td>
                 <td>{STATUS_BADGE[r.status] || r.status}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
@@ -258,7 +279,7 @@ export default function Reviews() {
                 <div className="form-group">
                   <label className="form-label">Review Title</label>
                   <input className="form-control" type="text" placeholder="e.g. Phase 1 Review"
-                    value={form.title} onChange={e => set('title', e.target.value)} required />
+                    value={form.title} onChange={e => set('title', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">
@@ -266,7 +287,7 @@ export default function Reviews() {
                   </label>
                   <textarea className="form-control" rows={4}
                     placeholder="Describe what the student should complete and submit…"
-                    value={form.description} onChange={e => set('description', e.target.value)} required />
+                    value={form.description} onChange={e => set('description', e.target.value)} />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
@@ -276,19 +297,20 @@ export default function Reviews() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Total Marks</label>
-                    <input className="form-control" type="number" min="1" step="0.5" placeholder="e.g. 100"
-                      value={form.total_marks} onChange={e => set('total_marks', e.target.value)} required />
+                    <input className="form-control" type="number" min="1" step="0.5" placeholder="e.g. 100" required
+                      value={form.total_marks} onChange={e => set('total_marks', e.target.value)} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Deadline</label>
-                    <input className="form-control" type="datetime-local"
-                      value={form.deadline} onChange={e => set('deadline', e.target.value)} required />
+                    <label className="form-label">Review Date</label>
+                    <input className="form-control" type="date"
+                      value={form.deadline ? form.deadline.slice(0, 10) : ''} onChange={e => set('deadline', e.target.value)} required />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Assign to Student</label>
                     <select className="form-select" value={form.student_id}
                       onChange={e => set('student_id', e.target.value)} required disabled={!!editing}>
                       <option value="">Select student…</option>
+                      <option value="all">All students</option>
                       {students.map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
@@ -324,13 +346,11 @@ export default function Reviews() {
                 {subView.task_note || <em>No task note provided</em>}
               </p>
               <p className="text-muted text-sm">
-                Submitted: {new Date(subView.submitted_at).toLocaleString()}
+                Submitted on: {new Date(subView.submitted_at).toLocaleDateString()}
               </p>
-              <a className="btn btn-info mt-2"
-                href={`http://localhost:5000/api/reviews/uploads/${subView.pdf_file}`}
-                target="_blank" rel="noreferrer">
+              <button type="button" className="btn btn-info mt-2" onClick={() => openPdfFromApi(subView.pdf_file)}>
                 <FiDownload /> View PDF
-              </a>
+              </button>
             </div>
           </div>
         </div>

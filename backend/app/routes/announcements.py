@@ -12,7 +12,7 @@ Announcements
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import User, Announcement
+from app.models import User, Announcement, Notification
 
 ann_bp = Blueprint('announcements', __name__)
 
@@ -56,6 +56,14 @@ def create_announcement():
 
     ann = Announcement(title=title, content=content, teacher_id=user.id)
     db.session.add(ann)
+    students = User.query.filter_by(role='student', join_code=user.join_code).all()
+    for student in students:
+        db.session.add(Notification(
+            recipient_id=student.id,
+            kind='announcement',
+            title='New announcement',
+            message=title,
+        ))
     db.session.commit()
     return jsonify(message='Announcement created', announcement=ann.to_dict()), 201
 

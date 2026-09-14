@@ -18,7 +18,7 @@ from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 from app.extensions import db
-from app.models import User, Review, Submission
+from app.models import User, Review, Submission, Notification
 from app.utils.helpers import allowed_pdf
 
 reviews_bp = Blueprint('reviews', __name__)
@@ -44,41 +44,141 @@ def list_reviews():
 @jwt_required()
 def create_review():
     user = _me()
-    if user.role != 'teacher':
-        return jsonify(error='Teacher access required'), 403
 
-    d = request.get_json(silent=True) or {}
-    title         = (d.get('title') or '').strip()
-    description   = (d.get('description') or '').strip()
-    review_number = d.get('review_number')
-    total_marks   = d.get('total_marks')
-    deadline      = d.get('deadline')
-    student_id    = d.get('student_id')
+    if user.role == 'teacher':
+        d = request.get_json(silent=True) or {}
+        review_number = d.get('review_number')
+        deadline      = d.get('deadline')
+        student_id    = d.get('student_id')
+        total_marks   = d.get('total_marks')
 
-    if not all([title, description, review_number, total_marks, deadline, student_id]):
-        return jsonify(error='All fields are required'), 400
+        if review_number is None or not deadline:
+            return jsonify(error='Review number and deadline are required'), 400
 
-    student = User.query.get(student_id)
-    if not student or student.role != 'student' or student.join_code != user.join_code:
-        return jsonify(error='Student not found'), 404
+        try:
+            dl = datetime.fromisoformat(deadline)
+        except ValueError:
+            return jsonify(error='Invalid deadline format (use ISO 8601)'), 400
+
+        title = (d.get('title') or '').strip() or f"Review {review_number}"
+        description = (d.get('description') or '').strip() or 'Student will provide the task details and PDF submission.'
+
+        if total_marks in (None, ''):
+            return jsonify(error='Total marks are required'), 400
+
+        try:
+            total_marks_value = float(total_marks)
+        except (TypeError, ValueError):
+            return jsonify(error='Invalid total marks value'), 400
+
+        if total_marks_value <= 0:
+            return jsonify(error='Total marks must be greater than 0'), 400
+
+        if student_id in (None, '', 'all', 'all_students'):
+            students = User.query.filter_by(role='student', join_code=user.join_code).order_by(User.name).all()
+            if not students:
+                return jsonify(error='No students are assigned to your class yet'), 400
+
+            created = []
+            for student in students:
+                review = Review(
+                    title=title,
+                    description=description,
+                    review_number=int(review_number),
+                    total_marks=total_marks_value,
+                    deadline=dl,
+                    teacher_id=user.id,
+                    student_id=student.id,
+                )
+                db.session.add(review)
+                created.append(review)
+
+            db.session.commit()
+            return jsonify(message='Review created for all students', reviews=[r.to_dict() for r in created]), 201
+
+        student = User.query.get(student_id)
+        if not student or student.role != 'student' or student.join_code != user.join_code:
+            return jsonify(error='Student not found'), 404
+
+        review = Review(
+            title=title,
+            description=description,
+            review_number=int(review_number),
+            total_marks=total_marks_value,
+            deadline=dl,
+            teacher_id=user.id,
+            student_id=student.id,
+        )
+        db.session.add(review)
+        db.session.commit()
+        return jsonify(message='Review created', review=review.to_dict()), 201
+
+    if user.role != 'student':
+        return jsonify(error='Access denied'), 403
+
+    if 'file' not in request.files:
+        return jsonify(error='PDF file is required'), 400
+
+    file = request.files['file']
+    if not file or file.filename == '':
+        return jsonify(error='No file selected'), 400
+    if not allowed_pdf(file.filename):
+        return jsonify(error='Only PDF files are allowed'), 400
+
+    review_number = (request.form.get('review_number') or '').strip()
+    deadline = (request.form.get('deadline') or '').strip()
+    title = (request.form.get('title') or '').strip()
+    description = (request.form.get('description') or '').strip()
+    task_note = (request.form.get('task_note') or '').strip()
+    total_marks = request.form.get('total_marks')
+
+    if not review_number or not deadline or not title or not description:
+        return jsonify(error='Review number, date, title and description are required'), 400
 
     try:
         dl = datetime.fromisoformat(deadline)
     except ValueError:
         return jsonify(error='Invalid deadline format (use ISO 8601)'), 400
 
+    teacher = User.query.filter_by(role='teacher', join_code=user.join_code).first()
+    if not teacher:
+        return jsonify(error='Your teacher is not available yet'), 404
+
+    total_marks_value = None
+    if total_marks not in (None, ''):
+        try:
+            total_marks_value = float(total_marks)
+        except (TypeError, ValueError):
+            return jsonify(error='Invalid total marks value'), 400
+    # Ensure a non-null value for databases with NOT NULL constraint
+    if total_marks_value is None:
+        total_marks_value = 0.0
+
     review = Review(
         title=title,
         description=description,
         review_number=int(review_number),
-        total_marks=float(total_marks),
+        total_marks=total_marks_value,
         deadline=dl,
-        teacher_id=user.id,
-        student_id=student_id,
+        teacher_id=teacher.id,
+        student_id=user.id,
     )
     db.session.add(review)
     db.session.commit()
-    return jsonify(message='Review created', review=review.to_dict()), 201
+
+    safe_name = secure_filename(file.filename)
+    filename = f"u{user.id}_r{review.id}_{safe_name}"
+    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+
+    sub = Submission(
+        review_id=review.id,
+        student_id=user.id,
+        task_note=task_note,
+        pdf_file=filename,
+    )
+    db.session.add(sub)
+    db.session.commit()
+    return jsonify(message='Review submitted successfully', review=review.to_dict()), 201
 
 
 # ── Teacher: update review ────────────────────────────────────────────────────
@@ -182,8 +282,8 @@ def submit_review(rid):
     review = Review.query.get_or_404(rid)
     if review.student_id != user.id:
         return jsonify(error='This review is not assigned to you'), 403
-    if review.submission:
-        return jsonify(error='Already submitted'), 400
+    if review.mark:
+        return jsonify(error='This review has already been marked and cannot be changed'), 400
 
     if 'file' not in request.files:
         return jsonify(error='PDF file is required'), 400
@@ -194,12 +294,44 @@ def submit_review(rid):
     if not allowed_pdf(file.filename):
         return jsonify(error='Only PDF files are allowed'), 400
 
+    title = (request.form.get('title') or '').strip()
+    description = (request.form.get('description') or '').strip()
     task_note = (request.form.get('task_note') or '').strip()
+
+    if title:
+        review.title = title
+    elif not review.title:
+        review.title = f"Review {review.review_number}"
+
+    if description:
+        review.description = description
+    elif not review.description:
+        review.description = 'Student submission details provided with the PDF upload.'
 
     # Save file with unique name
     safe_name = secure_filename(file.filename)
     filename  = f"u{user.id}_r{rid}_{safe_name}"
-    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+    upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    if review.submission and review.submission.pdf_file:
+        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], review.submission.pdf_file)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    file.save(upload_path)
+
+    if review.submission:
+        review.submission.task_note = task_note
+        review.submission.pdf_file = filename
+        review.submission.submitted_at = datetime.utcnow()
+        db.session.add(review.submission)
+        db.session.add(Notification(
+            recipient_id=review.teacher_id,
+            kind='review_submitted',
+            title='Review resubmitted',
+            message=f'{user.name} resubmitted "{review.title}".',
+        ))
+        db.session.commit()
+        return jsonify(message='Submission updated successfully'), 200
 
     sub = Submission(
         review_id=rid,
@@ -208,6 +340,12 @@ def submit_review(rid):
         pdf_file=filename,
     )
     db.session.add(sub)
+    db.session.add(Notification(
+        recipient_id=review.teacher_id,
+        kind='review_submitted',
+        title='New review submission',
+        message=f'{user.name} submitted "{review.title}".',
+    ))
     db.session.commit()
     return jsonify(message='Submitted successfully'), 201
 

@@ -55,9 +55,17 @@ export default function StudentHome() {
         <main className="page-body">
           {tab === 'overview' && (
             <>
-              <h2 style={{ fontWeight: 800, marginBottom: '1.2rem' }}>
-                Hello, {student?.name} 👋
-              </h2>
+              <div className="workspace-heading">
+                <div>
+                  <div className="workspace-eyebrow">STUDENT WORKSPACE <span>•</span> OVERVIEW</div>
+                  <h1>Hello, {student?.name}</h1>
+                  <p>Stay on top of your assigned reviews, feedback, and progress.</p>
+                </div>
+                <div className="workspace-date">
+                  <span>Today</span>
+                  <strong>{new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+                </div>
+              </div>
 
               <div className="stat-grid">
                 {[
