@@ -8,6 +8,7 @@ import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const user = getUser();
+  const roleLabel = { teacher: 'Guide', student: 'Member', admin: 'Admin' }[user?.role] || user?.role;
   const navigate = useNavigate();
   const [darkTheme, setDarkTheme] = useState(() => localStorage.getItem('prms_theme') === 'dark');
 
@@ -40,7 +41,7 @@ export default function Navbar() {
         <span className="nav-user">
           <FiUser style={{ marginRight: 4, verticalAlign: 'middle' }} />
           {user?.name}
-          <span className="nav-role-badge">{user?.role}</span>
+          <span className="nav-role-badge">{roleLabel}</span>
         </span>
         <NotificationBell />
         <button className="btn-nav-theme" onClick={() => setDarkTheme(theme => !theme)}

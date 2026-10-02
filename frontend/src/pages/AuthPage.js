@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiMail, FiLock, FiUser, FiKey, FiLogIn, FiUserPlus } from 'react-icons/fi';
+import { FiMail, FiLock, FiUser, FiKey, FiLogIn, FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
 import { loginUser, registerTeacher, registerStudent } from '../services/auth';
 import logo from '../assets/logo.svg';
 import HistoryControls from '../components/common/HistoryControls';
@@ -10,6 +10,7 @@ export default function AuthPage({ mode }) {
   const navigate = useNavigate();
   const [form, setForm]       = useState({ name: '', email: '', password: '', join_code: '' });
   const [busy, setBusy]       = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [joinCode, setJoinCode] = useState('');   // shown after teacher registers
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -25,7 +26,7 @@ export default function AuthPage({ mode }) {
       } else if (mode === 'register-teacher') {
         const data = await registerTeacher(form.name, form.email, form.password);
         setJoinCode(data.join_code);
-        toast.success('Teacher account created!');
+        toast.success('Guide account created!');
         // don't navigate yet — show join code first
       } else {
         const user = await registerStudent(form.name, form.email, form.password, form.join_code);
@@ -55,12 +56,12 @@ export default function AuthPage({ mode }) {
           <p className="auth-sub">Account Created!</p>
 
           <div className="alert alert-success" style={{ textAlign: 'center' }}>
-            Your teacher account is ready. Share the code below with your students.
+            Your guide account is ready. Share the code below with your members.
           </div>
 
           <div className="code-box mb-4">
             <div className="code">{joinCode}</div>
-            <p>Students enter this code when registering</p>
+            <p>Members enter this code when registering</p>
           </div>
 
           <button className="btn btn-primary w-100" style={{ justifyContent: 'center' }}
@@ -75,8 +76,8 @@ export default function AuthPage({ mode }) {
   // ── Form ───────────────────────────────────────────────────────────────
   const titles = {
     'login':            { h: 'Sign In',             sub: 'Login to your account' },
-    'register-teacher': { h: 'Teacher Registration', sub: 'Create a teacher account' },
-    'register-student': { h: 'Student Registration', sub: 'Join with your teacher\'s code' },
+    'register-teacher': { h: 'Guide Registration', sub: 'Create a guide account' },
+    'register-student': { h: 'Member Registration', sub: 'Join with your guide\'s code' },
   };
   const t = titles[mode];
 
@@ -108,18 +109,29 @@ export default function AuthPage({ mode }) {
             <label className="form-label"><FiLock style={{ marginRight: 5 }} />Password
               {mode !== 'login' && <span className="text-muted text-sm"> (min 6 characters)</span>}
             </label>
-            <input className="form-control" type="password" placeholder="Enter password"
-              value={form.password} onChange={e => set('password', e.target.value)} required />
+            <div className="password-field">
+              <input className="form-control" type={showPassword ? 'text' : 'password'} placeholder="Enter password"
+                value={form.password} onChange={e => set('password', e.target.value)} required />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(value => !value)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </button>
+            </div>
           </div>
 
           {/* Join code — student register only */}
           {mode === 'register-student' && (
             <div className="form-group">
-              <label className="form-label"><FiKey style={{ marginRight: 5 }} />Teacher Join Code</label>
+              <label className="form-label"><FiKey style={{ marginRight: 5 }} />Guide Join Code</label>
               <input className="form-control" type="text" placeholder="e.g. ABC12345"
                 value={form.join_code} onChange={e => set('join_code', e.target.value.toUpperCase())}
                 maxLength={8} required style={{ letterSpacing: '4px', fontWeight: 700 }} />
-              <p className="text-muted text-sm mt-1">Ask your teacher for this code to join their class.</p>
+              <p className="text-muted text-sm mt-1">Ask your guide for this code to join their class.</p>
             </div>
           )}
 
@@ -133,9 +145,9 @@ export default function AuthPage({ mode }) {
         {/* Navigation links */}
         <div className="text-center mt-3 text-sm text-muted">
           {mode === 'login' && <>
-            <Link to="/register-student">Join as Student</Link>
+            <Link to="/register-student">Join as Member</Link>
             {' · '}
-            <Link to="/register-teacher">Register as Teacher</Link>
+            <Link to="/register-teacher">Register as Guide</Link>
           </>}
           {mode === 'register-teacher' && <>
             Already have an account? <Link to="/login">Sign In</Link>

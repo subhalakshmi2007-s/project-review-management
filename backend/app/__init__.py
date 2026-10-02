@@ -80,6 +80,7 @@ def create_app():
     from app.routes.marks import marks_bp
     from app.routes.announcements import ann_bp
     from app.routes.notifications import notifications_bp
+    from app.routes.admin import admin_bp
 
     app.register_blueprint(
         auth_bp,
@@ -109,6 +110,11 @@ def create_app():
     app.register_blueprint(
         notifications_bp,
         url_prefix='/api/notifications'
+    )
+
+    app.register_blueprint(
+        admin_bp,
+        url_prefix='/api/admin'
     )
 
     # Serve React static files
@@ -143,5 +149,18 @@ def create_app():
     # Create database tables
     with app.app_context():
         db.create_all()
+        from werkzeug.security import generate_password_hash
+        from app.models import User
+
+        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@proreview.com').strip().lower()
+        admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+        if not User.query.filter_by(email=admin_email).first():
+            db.session.add(User(
+                name='System Administrator',
+                email=admin_email,
+                password=generate_password_hash(admin_password),
+                role='admin',
+            ))
+            db.session.commit()
 
     return app

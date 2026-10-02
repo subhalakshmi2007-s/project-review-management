@@ -7,6 +7,7 @@ import AuthPage       from './pages/AuthPage';
 import LandingPage    from './pages/LandingPage';
 import TeacherHome    from './pages/TeacherHome';
 import StudentHome    from './pages/StudentHome';
+import AdminHome      from './pages/AdminHome';
 
 const Guard = ({ role, children }) => {
   if (!isLoggedIn())     return <Navigate to="/login" replace />;
@@ -25,6 +26,7 @@ export default function App() {
 
         <Route path="/teacher" element={<Guard role="teacher"><TeacherHome /></Guard>} />
         <Route path="/student" element={<Guard role="student"><StudentHome /></Guard>} />
+        <Route path="/admin" element={<Guard role="admin"><AdminHome /></Guard>} />
 
         <Route path="/" element={<LandingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

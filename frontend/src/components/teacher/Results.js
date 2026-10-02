@@ -3,29 +3,37 @@ import { FiBarChart2, FiSearch, FiX } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 
-export default function Results() {
+export default function Results({ endpoint = '/marks/summary' }) {
   const [rows, setRows] = useState([]);
+  const [students, setStudents] = useState([]);
   const [studentSummaries, setStudentSummaries] = useState({});
   const [searchText, setSearchText] = useState('');
 
   const load = useCallback(async () => {
     try {
-      const { data } = await api.get('/marks/summary');
-      setRows(data);
+      const { data } = await api.get(endpoint);
+      setRows(Array.isArray(data) ? data : data.reviews || []);
+      setStudents(Array.isArray(data) ? [] : data.students || []);
       setStudentSummaries({});
     } catch {
       toast.error('Failed to load results');
     }
-  }, []);
+  }, [endpoint]);
 
   useEffect(() => { load(); }, [load]);
 
-  const studentGroups = useMemo(() => rows.reduce((groups, row) => {
-    const studentId = row.student_id;
-    if (!groups[studentId]) groups[studentId] = { name: row.student_name, rows: [] };
-    groups[studentId].rows.push(row);
+  const studentGroups = useMemo(() => {
+    const groups = rows.reduce((result, row) => {
+      const studentId = row.student_id;
+      if (!result[studentId]) result[studentId] = { name: row.student_name, rows: [] };
+      result[studentId].rows.push(row);
+      return result;
+    }, {});
+    students.forEach((student) => {
+      if (!groups[student.id]) groups[student.id] = { name: student.name, rows: [] };
+    });
     return groups;
-  }, {}), [rows]);
+  }, [rows, students]);
 
   const calculateStudentSummary = (studentId) => {
     const markedRows = studentGroups[studentId].rows.filter(
@@ -56,7 +64,7 @@ export default function Results() {
       </div>
 
       {Object.entries(studentGroups).length === 0
-        ? <div className="alert alert-info">No student results available yet.</div>
+        ? <div className="alert alert-info">No member results available yet.</div>
         : <>
           <div style={{
             display: 'flex', gap: '.75rem', alignItems: 'center',
@@ -72,7 +80,7 @@ export default function Results() {
                 className="form-control"
                 style={{ paddingLeft: 32, height: 38 }}
                 type="text"
-                placeholder="Search student by name…"
+                placeholder="Search member by name…"
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
               />
@@ -90,11 +98,8 @@ export default function Results() {
           </div>
 
           {filteredGroups.length === 0
-            ? <div className="alert alert-info">No students match your search.</div>
+            ? <div className="alert alert-info">No members match your search.</div>
             : filteredGroups.map(([studentId, group]) => {
-            const markedCount = group.rows.filter(
-              (row) => row.marks_obtained !== null && row.marks_obtained !== undefined,
-            ).length;
             const studentSummary = studentSummaries[studentId];
 
             return (
@@ -104,7 +109,6 @@ export default function Results() {
                   <button
                     className="btn btn-primary btn-sm"
                     onClick={() => calculateStudentSummary(studentId)}
-                    disabled={markedCount === 0}
                   >
                     <FiBarChart2 /> Calculate Results
                   </button>

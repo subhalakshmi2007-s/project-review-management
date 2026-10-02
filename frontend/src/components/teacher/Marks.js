@@ -177,7 +177,7 @@ export default function Marks() {
       <div className="tbl-wrap">
         <table>
           <thead>
-            <tr><th>Review</th><th>Student</th><th>Total</th><th>Obtained</th><th>Status</th><th>Action</th></tr>
+            <tr><th>Review</th><th>Member</th><th>Total</th><th>Obtained</th><th>Status</th><th>Action</th></tr>
           </thead>
           <tbody>
             {filteredRows.length === 0
@@ -229,7 +229,7 @@ export default function Marks() {
                     value={form.total_marks} onChange={e => setForm(f => ({ ...f, total_marks: e.target.value }))} required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Student Obtained Marks</label>
+                  <label className="form-label">Member Obtained Marks</label>
                   <input className="form-control" type="number" min="0" max={Number(form.total_marks) || 0} step="0.5"
                     value={form.marks_obtained} onChange={e => setForm(f => ({ ...f, marks_obtained: e.target.value }))} required />
                 </div>

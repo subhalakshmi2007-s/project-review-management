@@ -166,7 +166,7 @@ export default function Reviews() {
             value={filterStudent}
             onChange={e => setFilterStudent(e.target.value)}
           >
-            <option value="">All Students</option>
+            <option value="">All Members</option>
             {students.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -306,11 +306,11 @@ export default function Reviews() {
                       value={form.deadline ? form.deadline.slice(0, 10) : ''} onChange={e => set('deadline', e.target.value)} required />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Assign to Student</label>
+                    <label className="form-label">Assign to Member</label>
                     <select className="form-select" value={form.student_id}
                       onChange={e => set('student_id', e.target.value)} required disabled={!!editing}>
-                      <option value="">Select student…</option>
-                      <option value="all">All students</option>
+                      <option value="">Select member…</option>
+                      <option value="all">All members</option>
                       {students.map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}

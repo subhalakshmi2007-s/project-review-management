@@ -8,7 +8,7 @@ class User(db.Model):
     name       = db.Column(db.String(120), nullable=False)
     email      = db.Column(db.String(120), unique=True, nullable=False)
     password   = db.Column(db.String(256), nullable=False)
-    role       = db.Column(db.String(10), nullable=False, default='student')  # teacher | student
+    role       = db.Column(db.String(10), nullable=False, default='student')  # admin | teacher | student
     join_code  = db.Column(db.String(20), nullable=True)   # teacher's generated code (teacher row only)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

@@ -20,7 +20,7 @@ export default function Notices() {
       </div>
 
       {list.length === 0
-        ? <div className="alert alert-info">No announcements from your teacher yet.</div>
+        ? <div className="alert alert-info">No announcements from your guide yet.</div>
         : list.map(a => (
           <div key={a.id} className="ann-card">
             <h5>{a.title}</h5>

@@ -29,15 +29,15 @@ export default function LandingPage() {
             <p className="landing-kicker"><span /> PROJECT REVIEW MANAGEMENT</p>
             <h1>Make every review <em>count.</em></h1>
             <p className="landing-lede">
-              A clear, collaborative workspace for teachers to assign project reviews,
-              collect submissions, and give students feedback they can act on.
+              A clear, collaborative workspace for guides to assign project reviews,
+              collect submissions, and give members feedback they can act on.
             </p>
             <div className="landing-hero-actions">
               <Link className="btn btn-primary landing-main-cta" to="/register-teacher">
-                Start as a teacher <FiArrowRight />
+                Start as a guide <FiArrowRight />
               </Link>
               <Link className="landing-student-link" to="/register-student">
-                Join as a student
+                Join as a member
               </Link>
             </div>
             <div className="landing-trust-row">
@@ -53,7 +53,7 @@ export default function LandingPage() {
               <div className="preview-topline"><span>CLASS OVERVIEW</span><b>Spring 2026</b></div>
               <div className="preview-heading">Project review pulse</div>
               <div className="preview-metrics">
-                <div><strong>24</strong><span>Students</span></div>
+                <div><strong>24</strong><span>Members</span></div>
                 <div><strong>18</strong><span>Submitted</span></div>
                 <div><strong>92%</strong><span>Progress</span></div>
               </div>
@@ -61,7 +61,7 @@ export default function LandingPage() {
               <div className="preview-task"><span className="preview-icon"><FiClipboard /></span><span><b>Research proposal</b><small>12 reviews completed</small></span><strong>74%</strong></div>
               <div className="preview-task"><span className="preview-icon green"><FiUsers /></span><span><b>Design system audit</b><small>6 reviews completed</small></span><strong>50%</strong></div>
             </div>
-            <div className="landing-note"><FiCheckCircle /><span><b>Feedback loop closed</b><small>Students can see their marks</small></span></div>
+            <div className="landing-note"><FiCheckCircle /><span><b>Feedback loop closed</b><small>Members can see their marks</small></span></div>
           </div>
         </section>
 
@@ -69,7 +69,7 @@ export default function LandingPage() {
           <div><span className="benefit-number">01</span><h2>One place for the whole review cycle</h2></div>
           <p>From the first assignment to the final mark, keep project work moving with less chasing and more useful feedback.</p>
           <div className="benefit-line" />
-          <div className="benefit-stats"><strong>Built for</strong><span>Teachers who lead. Students who grow.</span></div>
+          <div className="benefit-stats"><strong>Built for</strong><span>Guides who lead. Members who grow.</span></div>
         </section>
       </main>
     </div>

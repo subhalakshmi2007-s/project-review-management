@@ -31,7 +31,15 @@ export default function NotificationBell() {
       setUnread(current => Math.max(0, current - 1));
     }
     setOpen(false);
-    navigate(`/${getRole()}`);
+    const role = getRole();
+    const tabs = {
+      announcement: 'announcements',
+      marks_assigned: 'marks',
+      marks_updated: 'marks',
+      review_submitted: 'reviews',
+    };
+    const tab = tabs[notification.kind];
+    navigate(tab ? `/${role}?tab=${tab}` : `/${role}`);
   };
 
   const markAllRead = async () => {

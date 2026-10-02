@@ -48,7 +48,7 @@ export default function Announcements() {
       </div>
 
       {list.length === 0
-        ? <div className="alert alert-info">No announcements yet. Post one to notify all your students.</div>
+        ? <div className="alert alert-info">No announcements yet. Post one to notify all your members.</div>
         : list.map(a => (
           <div key={a.id} className="ann-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -80,7 +80,7 @@ export default function Announcements() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Message</label>
-                  <textarea className="form-control" rows={5} placeholder="Type your message to students…"
+                  <textarea className="form-control" rows={5} placeholder="Type your message to members…"
                     value={form.content} onChange={e => set('content', e.target.value)} required />
                 </div>
               </div>

@@ -35,7 +35,7 @@ export default function JoinCode() {
 
       <div className="code-box mb-3">
         <div className="code">{code || '…'}</div>
-        <p>Share this code with students so they can register and join your class</p>
+        <p>Share this code with members so they can register and join your class</p>
       </div>
 
       <div style={{ display: 'flex', gap: '.75rem' }}>
@@ -48,8 +48,8 @@ export default function JoinCode() {
       </div>
 
       <div className="alert alert-warn mt-3">
-        <strong>Note:</strong> Refreshing generates a new code. Students who haven't registered yet
-        will need the new code. Students already registered are unaffected.
+        <strong>Note:</strong> Refreshing generates a new code. Members who haven't registered yet
+        will need the new code. Members already registered are unaffected.
       </div>
     </>
   );

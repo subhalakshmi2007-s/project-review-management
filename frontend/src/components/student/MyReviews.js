@@ -130,7 +130,7 @@ export default function MyReviews() {
 
             {r.feedback && (
               <div className="alert alert-success" style={{ fontSize: '.85rem', padding: '8px 12px' }}>
-                <strong>Teacher Feedback:</strong> {r.feedback}
+                <strong>Guide Feedback:</strong> {r.feedback}
               </div>
             )}
 

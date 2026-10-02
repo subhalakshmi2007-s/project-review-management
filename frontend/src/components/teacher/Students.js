@@ -49,7 +49,7 @@ export default function Students({ onRefresh }) {
   return (
     <>
       <div className="panel-head">
-        <h3 className="panel-title"><FiUser style={{ marginRight: 6, color: 'var(--navy)' }} />Students</h3>
+        <h3 className="panel-title"><FiUser style={{ marginRight: 6, color: 'var(--navy)' }} />Members</h3>
         <button className="btn btn-primary" onClick={openAdd}><FiPlus /> Add Student</button>
       </div>
 
